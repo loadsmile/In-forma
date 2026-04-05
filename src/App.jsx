@@ -570,39 +570,19 @@ export default function App() {
     <main className="dashboard-shell">
       <section className="dashboard-hero panel">
         <div className="hero-copy-block">
-          <div className="brand-lockup">
-            <div className="brand-badge" aria-hidden="true">
-              <span className="brand-node node-primary" />
-              <span className="brand-node node-secondary" />
-              <span className="brand-node node-tertiary" />
-              <span className="brand-stem" />
-            </div>
-            <div>
-              <p className="panel-kicker">Daily recovery dashboard</p>
-              <div className="brand-title-row">
-                <span className="brand-mark">In-Forma</span>
-              </div>
-            </div>
+          <div className="hero-wordmark-block">
+            <h1 className="brand-mark hero-wordmark">In-Forma</h1>
+            <p className="hero-tagline">Yesterday, decoded for tomorrow.</p>
           </div>
-          <h1>Yesterday, decoded for tomorrow.</h1>
+
           <p className="hero-copy-text">
             A previous-day health view with sleep depth, HRV, training load, completed activity context, and next-day recommendations grounded in the last synced Garmin data.
           </p>
-        </div>
 
-        <div className="hero-meta">
-          <div className="meta-pill">
-            <span className="meta-label">Reviewed day</span>
+          <p className="hero-reviewed-day hero-reviewed-day-corner">
+            <span>Reviewed day</span>
             <strong>{formatMetricDate(focusDay?.metric_date)}</strong>
-          </div>
-          <div className="meta-pill">
-            <span className="meta-label">Status</span>
-            <strong>{loading ? 'Refreshing' : error ? 'Connection issue' : 'Live'}</strong>
-          </div>
-          <div className="meta-pill accent-pill">
-            <span className="meta-label">Activities</span>
-            <strong>{activities.length}</strong>
-          </div>
+          </p>
         </div>
       </section>
 
