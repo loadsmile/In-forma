@@ -6,10 +6,8 @@ export function shapeDashboardDay(row) {
     steps: row.steps,
     resting_heart_rate: row.resting_heart_rate,
     sleep_seconds: row.sleep_seconds,
-    model: row.model,
     summary: row.summary,
     recommendations: row.recommendations,
-    prompt_version: row.prompt_version,
     raw_payload: {
       schemaVersion: rawPayload.schemaVersion ?? null,
       activities: Array.isArray(rawPayload.activities)
@@ -87,10 +85,8 @@ export async function getDashboardOverview(client) {
         m.resting_heart_rate,
         m.sleep_seconds,
         m.raw_payload,
-        a.model,
         a.summary,
-        a.recommendations,
-        a.prompt_version
+        a.recommendations
       FROM daily_health_metrics m
       LEFT JOIN daily_analysis a ON a.metric_date = m.metric_date
       ORDER BY m.metric_date DESC

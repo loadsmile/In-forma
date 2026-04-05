@@ -597,7 +597,6 @@ export default function App() {
                   <p className="panel-kicker">Previous day brief</p>
                   <h2>{formatMetricDate(focusDay?.metric_date, 'EEEE')}</h2>
                 </div>
-                <span>{focusDay?.model ?? 'Analysis pending'}</span>
               </div>
 
               <p className="focus-summary">{focusDay?.summary ?? 'No analysis stored yet.'}</p>
