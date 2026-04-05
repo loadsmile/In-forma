@@ -5,6 +5,15 @@ function getMetricDate(value) {
   return value instanceof Date ? value : parseISO(value);
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
 function formatDuration(seconds) {
   if (seconds == null) {
     return 'n/a';
@@ -41,7 +50,7 @@ function formatMetricDateTime(value, pattern) {
 }
 
 function formatSummary(summary) {
-  return (summary ?? '').split('\n').filter(Boolean).join('<br />');
+  return escapeHtml(summary ?? '').split('\n').filter(Boolean).join('<br />');
 }
 
 function getRecommendationItems(value) {
@@ -56,7 +65,7 @@ function getRecommendationItems(value) {
 }
 
 function renderList(items) {
-  return items.map((item) => `<li>${item}</li>`).join('');
+  return items.map((item) => `<li>${escapeHtml(item)}</li>`).join('');
 }
 
 function renderSupportedMetrics(metrics) {
@@ -146,7 +155,7 @@ function renderActivities(metrics) {
       activity.steps == null ? null : `${activity.steps} steps`,
     ].filter(Boolean).join(' • ');
 
-    return `<li><strong>${activity.activityName ?? 'Unnamed activity'}</strong>${details ? `<br /><span style="color:#526274;">${details}</span>` : ''}</li>`;
+    return `<li><strong>${escapeHtml(activity.activityName ?? 'Unnamed activity')}</strong>${details ? `<br /><span style="color:#526274;">${escapeHtml(details)}</span>` : ''}</li>`;
   }).join('');
 
   return `
@@ -170,8 +179,8 @@ export function renderDailyEmail({ metrics, analysis, deliveryLabel }) {
               <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="max-width:600px;background:#ffffff;border-radius:18px;padding:32px;">
                 <tr>
                   <td>
-                    <p style="margin:0 0 8px;font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:#426bff;">${deliveryLabel}</p>
-                    <h1 style="margin:0 0 12px;font-size:28px;line-height:1.1;">${env.personName}'s daily fitness check-in</h1>
+                    <p style="margin:0 0 8px;font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:#426bff;">${escapeHtml(deliveryLabel)}</p>
+                    <h1 style="margin:0 0 12px;font-size:28px;line-height:1.1;">${escapeHtml(env.personName)}'s daily fitness check-in</h1>
                     <p style="margin:0 0 24px;color:#526274;">${formattedDate}</p>
                     <h2 style="margin:0 0 12px;font-size:18px;">Summary</h2>
                     <p style="margin:0 0 20px;line-height:1.6;">${formatSummary(analysis.summary)}</p>

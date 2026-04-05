@@ -12,6 +12,7 @@
     "dev:api": "node scripts/dev-api.js",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "node --test",
     "sync:morning": "node scripts/sync-morning.js",
     "sync:evening": "node scripts/sync-evening.js",
     "sync:weekly": "node scripts/sync-weekly.js",

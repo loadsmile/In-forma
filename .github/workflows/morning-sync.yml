@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: morning-sync
+  cancel-in-progress: false
+
 jobs:
   run:
     runs-on: ubuntu-latest

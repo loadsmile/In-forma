@@ -3,6 +3,7 @@ import { createGarminClient } from './client.js';
 import { normalizeDailyMetrics } from './normalize.js';
 
 export const GARMIN_METRIC_SCHEMA_VERSION = 'v3';
+const criticalGarminMetrics = new Set(['steps', 'heartRate', 'sleep']);
 
 function toMetricDateString(value) {
   return format(value, 'yyyy-MM-dd');
@@ -47,11 +48,29 @@ function poundsToKilograms(value) {
   return Number((value * 0.45359237).toFixed(2));
 }
 
-async function fetchGarminMetric(fetchMetric) {
+function createFetchWarning(metric, error) {
+  return {
+    metric,
+    required: criticalGarminMetrics.has(metric),
+    message: error instanceof Error ? error.message : String(error),
+  };
+}
+
+function formatFetchWarnings(warnings) {
+  return warnings.map((warning) => `${warning.metric}: ${warning.message}`);
+}
+
+async function fetchGarminMetric(metric, fetchMetric) {
   try {
-    return await fetchMetric();
-  } catch {
-    return null;
+    return {
+      value: await fetchMetric(),
+      warning: null,
+    };
+  } catch (error) {
+    return {
+      value: null,
+      warning: createFetchWarning(metric, error),
+    };
   }
 }
 
@@ -226,17 +245,36 @@ export async function syncDailySummary({ syncType }) {
   const garminClient = await createGarminClient();
   const metricDate = getSyncMetricDate(syncType);
 
-  const steps = await fetchGarminMetric(() => garminClient.getSteps(metricDate));
-  const heartRate = await fetchGarminMetric(() => garminClient.getHeartRate(metricDate));
-  const sleep = await fetchGarminMetric(() => garminClient.getSleepData(metricDate));
-  const hydrationOunces = await fetchGarminMetric(() => garminClient.getDailyHydration(metricDate));
-  const weightInPounds = await fetchGarminMetric(() => garminClient.getDailyWeightInPounds(metricDate));
-  const hrvData = await fetchGarminMetric(() => garminClient.getHRVData(metricDate));
-  const trainingStatus = await fetchGarminMetric(() => garminClient.getTrainingStatus(metricDate));
-  const trainingLoadBalance = await fetchGarminMetric(() => garminClient.getTrainingLoadBalance(metricDate));
-  const activitiesResult = await fetchGarminMetric(() => garminClient.getActivities(0, 50));
-  const activities = Array.isArray(activitiesResult)
-    ? filterActivitiesByDate(activitiesResult, metricDate)
+  const metricResults = [];
+  metricResults.push(await fetchGarminMetric('steps', () => garminClient.getSteps(metricDate)));
+  metricResults.push(await fetchGarminMetric('heartRate', () => garminClient.getHeartRate(metricDate)));
+  metricResults.push(await fetchGarminMetric('sleep', () => garminClient.getSleepData(metricDate)));
+  metricResults.push(await fetchGarminMetric('hydration', () => garminClient.getDailyHydration(metricDate)));
+  metricResults.push(await fetchGarminMetric('weight', () => garminClient.getDailyWeightInPounds(metricDate)));
+  metricResults.push(await fetchGarminMetric('hrv', () => garminClient.getHRVData(metricDate)));
+  metricResults.push(await fetchGarminMetric('trainingStatus', () => garminClient.getTrainingStatus(metricDate)));
+  metricResults.push(await fetchGarminMetric('trainingLoadBalance', () => garminClient.getTrainingLoadBalance(metricDate)));
+  metricResults.push(await fetchGarminMetric('activities', () => garminClient.getActivities(0, 50)));
+  const [stepsResult, heartRateResult, sleepResult, hydrationResult, weightResult, hrvResult, trainingStatusResult, trainingLoadBalanceResult, activitiesFetchResult] = metricResults;
+  const warnings = metricResults
+    .map((result) => result.warning)
+    .filter(Boolean);
+  const criticalWarnings = warnings.filter((warning) => warning.required);
+
+  if (criticalWarnings.length > 0) {
+    throw new Error(`Critical Garmin metrics unavailable: ${formatFetchWarnings(criticalWarnings).join('; ')}`);
+  }
+
+  const steps = stepsResult.value;
+  const heartRate = heartRateResult.value;
+  const sleep = sleepResult.value;
+  const hydrationOunces = hydrationResult.value;
+  const weightInPounds = weightResult.value;
+  const hrvData = hrvResult.value;
+  const trainingStatus = trainingStatusResult.value;
+  const trainingLoadBalance = trainingLoadBalanceResult.value;
+  const activities = Array.isArray(activitiesFetchResult.value)
+    ? filterActivitiesByDate(activitiesFetchResult.value, metricDate)
     : [];
   const sleepDetails = buildSleepDetails(sleep);
   const heartRateDetails = buildHeartRateDetails(heartRate);
@@ -277,6 +315,7 @@ export async function syncDailySummary({ syncType }) {
     hrvDetails,
     trainingStatusDetails,
     trainingLoadBalanceDetails,
+    fetchWarnings: warnings,
     activities,
   };
 
