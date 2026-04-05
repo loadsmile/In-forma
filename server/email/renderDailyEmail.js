@@ -67,6 +67,42 @@ function renderSupportedMetrics(metrics) {
   ]);
 }
 
+function renderRecoverySignals(metrics) {
+  const heartRateDetails = metrics.raw_payload?.heartRateDetails;
+  const sleepDetails = metrics.raw_payload?.sleepDetails;
+  const hrvDetails = metrics.raw_payload?.hrvDetails;
+  const trainingStatusDetails = metrics.raw_payload?.trainingStatusDetails;
+  const trainingLoadBalanceDetails = metrics.raw_payload?.trainingLoadBalanceDetails;
+  const items = [
+    hrvDetails?.lastNightAvg == null ? null : `Nightly HRV average: ${hrvDetails.lastNightAvg}`,
+    hrvDetails?.weeklyAvg == null ? null : `7-day HRV average: ${hrvDetails.weeklyAvg}`,
+    hrvDetails?.status ? `HRV status: ${hrvDetails.status}` : null,
+    sleepDetails?.averageRespirationValue == null ? null : `Average overnight respiration: ${sleepDetails.averageRespirationValue}`,
+    sleepDetails?.lowestRespirationValue == null || sleepDetails?.highestRespirationValue == null
+      ? null
+      : `Respiration range: ${sleepDetails.lowestRespirationValue}-${sleepDetails.highestRespirationValue}`,
+    sleepDetails?.overnightHeartRateAverage == null ? null : `Average overnight heart rate: ${sleepDetails.overnightHeartRateAverage}`,
+    sleepDetails?.bodyBatteryChange == null ? null : `Overnight body battery change: ${sleepDetails.bodyBatteryChange}`,
+    heartRateDetails?.lastSevenDaysAvgRestingHeartRate == null
+      ? null
+      : `7-day resting heart rate average: ${heartRateDetails.lastSevenDaysAvgRestingHeartRate}`,
+    trainingStatusDetails?.weeklyTrainingLoad == null ? null : `Weekly training load: ${trainingStatusDetails.weeklyTrainingLoad}`,
+    trainingStatusDetails?.acuteTrainingLoad?.acwrStatus ? `Acute load status: ${trainingStatusDetails.acuteTrainingLoad.acwrStatus}` : null,
+    trainingStatusDetails?.feedbackPhrase ?? null,
+    trainingLoadBalanceDetails?.feedbackPhrase ?? null,
+  ].filter(Boolean);
+
+  if (items.length === 0) {
+    return '<p style="margin:0 0 24px;line-height:1.6;color:#526274;">Recovery-specific Garmin signals were not available for this day.</p>';
+  }
+
+  return `
+    <ul style="padding-left:18px;line-height:1.8;color:#243447;margin:0 0 24px;">
+      ${renderList(items)}
+    </ul>
+  `;
+}
+
 function renderSleepDetails(metrics) {
   const sleepDetails = metrics.raw_payload?.sleepDetails;
 
@@ -147,6 +183,8 @@ export function renderDailyEmail({ metrics, analysis, deliveryLabel }) {
                     <ul style="padding-left:18px;line-height:1.8;color:#243447;margin:0 0 24px;">
                       ${renderSupportedMetrics(metrics)}
                     </ul>
+                    <h2 style="margin:0 0 12px;font-size:18px;">Recovery signals</h2>
+                    ${renderRecoverySignals(metrics)}
                     <h2 style="margin:0 0 12px;font-size:18px;">Recommendations for tomorrow</h2>
                     <ul style="padding-left:18px;line-height:1.8;color:#243447;margin:0 0 24px;">
                       ${renderList(recommendationItems)}

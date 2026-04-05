@@ -2,7 +2,7 @@ import { env } from '../config/env.js';
 import { createLlmClient } from './client.js';
 import { buildDailyAnalysisPrompt } from './prompts.js';
 
-export const DAILY_ANALYSIS_PROMPT_VERSION = 'v2';
+export const DAILY_ANALYSIS_PROMPT_VERSION = 'v3';
 
 function normalizeRecommendations(value) {
   if (Array.isArray(value)) {
