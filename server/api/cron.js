@@ -21,21 +21,23 @@ export function authorizeCronRequest(request) {
 }
 
 export async function runCronJob({ request, response, job }) {
-  if (request.method !== 'GET') {
-    response.status(405).json({ error: 'Method not allowed' });
-    return;
-  }
-
-  if (!authorizeCronRequest(request)) {
-    response.status(401).json({ error: 'Unauthorized' });
-    return;
-  }
-
   try {
+    if (request.method !== 'GET') {
+      response.status(405).json({ error: 'Method not allowed' });
+      return;
+    }
+
+    if (!authorizeCronRequest(request)) {
+      response.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
     await migrate();
     await job();
     response.status(200).json({ ok: true });
   } catch (error) {
-    response.status(500).json({ error: error.message });
+    response.status(500).json({
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 }
