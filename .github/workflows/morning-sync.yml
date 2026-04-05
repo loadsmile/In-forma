@@ -1,0 +1,33 @@
+name: morning-sync
+
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run db:migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - run: npm run sync:morning
+        env:
+          GARMIN_EMAIL: ${{ secrets.GARMIN_EMAIL }}
+          GARMIN_PASSWORD: ${{ secrets.GARMIN_PASSWORD }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL: ${{ secrets.OPENROUTER_MODEL }}
+          ZAPIER_WEBHOOK_URL: ${{ secrets.ZAPIER_WEBHOOK_URL }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          PERSON_NAME: ${{ secrets.PERSON_NAME }}
+          PERSON_HEIGHT_CM: ${{ secrets.PERSON_HEIGHT_CM }}
+          PERSON_WEIGHT_KG: ${{ secrets.PERSON_WEIGHT_KG }}
+          PERSON_GOAL: ${{ secrets.PERSON_GOAL }}
