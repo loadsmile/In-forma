@@ -4,6 +4,6 @@ const forceRefresh = process.argv.includes('--force');
 
 await runSync({
   syncType: 'morning',
-  deliveryLabel: '10:00 WEST morning email',
+  deliveryLabel: 'Morning recovery email',
   forceRefresh,
 });
