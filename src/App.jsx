@@ -316,9 +316,6 @@ function RecoveryTrendChart({ days }) {
   const orderedDays = [...days].reverse();
   const maxSteps = Math.max(...orderedDays.map((day) => day.steps ?? 0), 1);
   const averageSteps = average(orderedDays.map((day) => day.steps).filter((value) => value != null));
-  const hrvPoints = buildChartPoints(days, (day) => getNightlyHrv(day));
-  const heartRatePoints = buildChartPoints(days, (day) => day.resting_heart_rate ?? null);
-  const sleepScorePoints = buildChartPoints(days, (day) => getSleepScore(day));
 
   return (
     <div className="chart-shell">
@@ -344,12 +341,6 @@ function RecoveryTrendChart({ days }) {
             </div>
           );
         })}
-      </div>
-
-      <div className="mini-trend-grid">
-        <MiniTrendRow label="Nightly HRV" points={hrvPoints} colorClass="series-hrv" />
-        <MiniTrendRow label="Resting HR" points={heartRatePoints} colorClass="series-heart" />
-        <MiniTrendRow label="Sleep score" points={sleepScorePoints} colorClass="series-sleep" />
       </div>
     </div>
   );
@@ -559,6 +550,9 @@ export default function App() {
   const recommendations = getRecommendationItems(focusDay?.recommendations);
   const trendSummary = buildTrendSummary(recentDays);
   const activities = getActivities(focusDay);
+  const hrvPoints = buildChartPoints(recentDays, (day) => getNightlyHrv(day));
+  const heartRatePoints = buildChartPoints(recentDays, (day) => day.resting_heart_rate ?? null);
+  const sleepScorePoints = buildChartPoints(recentDays, (day) => getSleepScore(day));
 
   if (!loading && !error && !focusDay) {
     return (
@@ -615,103 +609,118 @@ export default function App() {
       {error ? <section className="inline-alert">{error}</section> : null}
 
       <section className="dashboard-grid">
-        <article className="panel panel-focus">
-          <div className="panel-heading">
-            <div>
-              <p className="panel-kicker">Previous day brief</p>
-              <h2>{formatMetricDate(focusDay?.metric_date, 'EEEE')}</h2>
-            </div>
-            <span>{focusDay?.model ?? 'Analysis pending'}</span>
-          </div>
+        <div className="dashboard-primary-stack">
+          <div className="dashboard-connected-stack dashboard-summary-stack">
+            <article className="panel panel-focus">
+              <div className="panel-heading">
+                <div>
+                  <p className="panel-kicker">Previous day brief</p>
+                  <h2>{formatMetricDate(focusDay?.metric_date, 'EEEE')}</h2>
+                </div>
+                <span>{focusDay?.model ?? 'Analysis pending'}</span>
+              </div>
 
-          <p className="focus-summary">{focusDay?.summary ?? 'No analysis stored yet.'}</p>
+              <p className="focus-summary">{focusDay?.summary ?? 'No analysis stored yet.'}</p>
 
-          <div className="snapshot-grid">
-            <div className="snapshot-card lime-card">
-              <span>Steps</span>
-              <strong><MetricDisplay value={focusDay?.steps == null ? null : formatNumber(focusDay.steps)} /></strong>
-              <small>{displayMetricHint(focusDay?.steps ?? null, 'Previous day total')}</small>
-            </div>
-            <div className="snapshot-card cream-card">
-              <span>Sleep</span>
-              <strong><MetricDisplay value={focusDay?.sleep_seconds == null ? null : formatDuration(focusDay.sleep_seconds)} /></strong>
-              <small>{displayMetricHint(focusDay?.sleep_seconds ?? null, 'Total overnight duration')}</small>
-            </div>
-            <div className="snapshot-card blush-card">
-              <span>Nightly HRV</span>
-              <strong><MetricDisplay value={getNightlyHrv(focusDay)} /></strong>
-              <small>{displayMetricHint(getNightlyHrv(focusDay), getHrvDetails(focusDay)?.status ?? 'Recovery variability')}</small>
-            </div>
-            <div className="snapshot-card slate-card">
-              <span>Resting HR</span>
-              <strong><MetricDisplay value={focusDay?.resting_heart_rate ?? null} /></strong>
-              <small>{displayMetricHint(focusDay?.resting_heart_rate ?? null, 'Baseline pulse')}</small>
-            </div>
-            <div className="snapshot-card olive-card">
-              <span>Training load</span>
-              <strong><MetricDisplay value={getTrainingStatusDetails(focusDay)?.weeklyTrainingLoad ?? null} /></strong>
-              <small>{displayMetricHint(getTrainingStatusDetails(focusDay)?.weeklyTrainingLoad ?? null, getTrainingStatusDetails(focusDay)?.acuteTrainingLoad?.acwrStatus ?? 'Garmin load signal')}</small>
-            </div>
-          </div>
-        </article>
+              <div className="snapshot-grid">
+                <div className="snapshot-card lime-card">
+                  <span>Steps</span>
+                  <strong><MetricDisplay value={focusDay?.steps == null ? null : formatNumber(focusDay.steps)} /></strong>
+                  <small>{displayMetricHint(focusDay?.steps ?? null, 'Previous day total')}</small>
+                </div>
+                <div className="snapshot-card cream-card">
+                  <span>Sleep</span>
+                  <strong><MetricDisplay value={focusDay?.sleep_seconds == null ? null : formatDuration(focusDay.sleep_seconds)} /></strong>
+                  <small>{displayMetricHint(focusDay?.sleep_seconds ?? null, 'Total overnight duration')}</small>
+                </div>
+                <div className="snapshot-card blush-card">
+                  <span>Nightly HRV</span>
+                  <strong><MetricDisplay value={getNightlyHrv(focusDay)} /></strong>
+                  <small>{displayMetricHint(getNightlyHrv(focusDay), getHrvDetails(focusDay)?.status ?? 'Recovery variability')}</small>
+                </div>
+                <div className="snapshot-card slate-card">
+                  <span>Resting HR</span>
+                  <strong><MetricDisplay value={focusDay?.resting_heart_rate ?? null} /></strong>
+                  <small>{displayMetricHint(focusDay?.resting_heart_rate ?? null, 'Baseline pulse')}</small>
+                </div>
+                <div className="snapshot-card olive-card">
+                  <span>Training load</span>
+                  <strong><MetricDisplay value={getTrainingStatusDetails(focusDay)?.weeklyTrainingLoad ?? null} /></strong>
+                  <small>{displayMetricHint(getTrainingStatusDetails(focusDay)?.weeklyTrainingLoad ?? null, getTrainingStatusDetails(focusDay)?.acuteTrainingLoad?.acwrStatus ?? 'Garmin load signal')}</small>
+                </div>
+              </div>
+            </article>
 
-        <article className="panel panel-recommendations">
-          <div className="panel-heading compact">
-            <div>
-              <p className="panel-kicker">Tomorrow focus</p>
-              <h2>Recommendations</h2>
-            </div>
-          </div>
+            <article className="panel panel-trends">
+              <div className="panel-heading">
+                <div>
+                  <p className="panel-kicker">3-day rhythm</p>
+                  <h2>Recovery trendline</h2>
+                </div>
+                <span>{recentDays.length} days loaded</span>
+              </div>
 
-          <ul className="recommendation-list">
-            {recommendations.length > 0 ? (
-              recommendations.map((item) => <li key={item}>{item}</li>)
-            ) : (
-              <li>Recommendations will appear here after the latest analysis finishes.</li>
-            )}
-          </ul>
-        </article>
-
-        <article className="panel panel-trends">
-          <div className="panel-heading">
-            <div>
-              <p className="panel-kicker">3-day rhythm</p>
-              <h2>Recovery trendline</h2>
-            </div>
-            <span>{recentDays.length} days loaded</span>
-          </div>
-
-          <div className="trend-layout">
-            <RecoveryTrendChart days={recentDays} />
-
+              <div className="trend-layout">
             <div className="trend-summary-grid">
-              <div>
+              <div className="trend-stat-card">
                 <span>Average steps</span>
                 <strong><MetricDisplay value={trendSummary.averageSteps == null ? null : formatNumber(trendSummary.averageSteps)} /></strong>
-                {isMissingMetric(trendSummary.averageSteps) ? <small className="metric-empty-copy">Awaiting data</small> : null}
-              </div>
-              <div>
-                <span>Average nightly HRV</span>
-                <strong><MetricDisplay value={trendSummary.averageNightlyHrv} /></strong>
-                {isMissingMetric(trendSummary.averageNightlyHrv) ? <small className="metric-empty-copy">Awaiting data</small> : null}
-              </div>
-              <div>
-                <span>Average resting HR</span>
-                <strong><MetricDisplay value={trendSummary.averageRestingHeartRate} /></strong>
-                {isMissingMetric(trendSummary.averageRestingHeartRate) ? <small className="metric-empty-copy">Awaiting data</small> : null}
-              </div>
-              <div>
-                <span>Average sleep score</span>
+                <small>{isMissingMetric(trendSummary.averageSteps) ? 'Awaiting data' : '3-day mean'}</small>
+                  </div>
+                  <div className="trend-stat-card">
+                    <span>Average nightly HRV</span>
+                    <strong><MetricDisplay value={trendSummary.averageNightlyHrv} /></strong>
+                    <small>{isMissingMetric(trendSummary.averageNightlyHrv) ? 'Awaiting data' : 'Recovery variability'}</small>
+                  </div>
+                  <div className="trend-stat-card">
+                    <span>Average resting HR</span>
+                    <strong><MetricDisplay value={trendSummary.averageRestingHeartRate} /></strong>
+                    <small>{isMissingMetric(trendSummary.averageRestingHeartRate) ? 'Awaiting data' : 'Morning baseline'}</small>
+                  </div>
+                  <div className="trend-stat-card">
+                    <span>Average sleep score</span>
                 <strong><MetricDisplay value={trendSummary.averageSleepScore} /></strong>
-                {isMissingMetric(trendSummary.averageSleepScore) ? <small className="metric-empty-copy">Awaiting data</small> : null}
+                <small>{isMissingMetric(trendSummary.averageSleepScore) ? 'Awaiting data' : 'Overnight quality'}</small>
               </div>
             </div>
-          </div>
-        </article>
 
-        <RecoveryPanel focusDay={focusDay} />
-        <SleepStageCard focusDay={focusDay} />
-        <ActivityPanel focusDay={focusDay} />
+            <div className="trend-content-stack">
+              <RecoveryTrendChart days={recentDays} />
+
+              <div className="mini-trend-grid">
+                <MiniTrendRow label="Nightly HRV" points={hrvPoints} colorClass="series-hrv" />
+                <MiniTrendRow label="Resting HR" points={heartRatePoints} colorClass="series-heart" />
+                    <MiniTrendRow label="Sleep score" points={sleepScorePoints} colorClass="series-sleep" />
+                  </div>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <RecoveryPanel focusDay={focusDay} />
+        </div>
+
+        <div className="dashboard-secondary-stack dashboard-connected-stack">
+          <article className="panel panel-recommendations">
+            <div className="panel-heading compact">
+              <div>
+                <p className="panel-kicker">Tomorrow focus</p>
+                <h2>Recommendations</h2>
+              </div>
+            </div>
+
+            <ul className="recommendation-list">
+              {recommendations.length > 0 ? (
+                recommendations.map((item) => <li key={item}>{item}</li>)
+              ) : (
+                <li>Recommendations will appear here after the latest analysis finishes.</li>
+              )}
+            </ul>
+          </article>
+
+          <SleepStageCard focusDay={focusDay} />
+          <ActivityPanel focusDay={focusDay} />
+        </div>
       </section>
     </main>
   );
