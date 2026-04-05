@@ -1,6 +1,6 @@
 # In-Forma
 
-Personal Garmin-to-email fitness agent with a Vite dashboard, Supabase/Postgres storage, GitHub Actions sync automation, and Vercel hosting for the dashboard.
+Personal Garmin-to-email fitness agent with a Vite dashboard, Supabase/Postgres storage, Vercel Cron automation, and Vercel hosting for the dashboard.
 
 ## Local Development
 
@@ -57,15 +57,18 @@ Profile:
 - `PERSON_WEIGHT_KG`
 - `PERSON_GOAL`
 
-## GitHub Actions Automation
+Scheduler protection:
 
-Workflows:
+- `CRON_SECRET`
 
-- `morning-sync`
-- `evening-sync`
-- `weekly-digest`
+## Vercel Cron Automation
 
-Actions secrets required:
+Production cron endpoints:
+
+- `/api/cron/morning`
+- `/api/cron/weekly`
+
+Required Vercel environment variables for cron + dashboard:
 
 - `GARMIN_EMAIL`
 - `GARMIN_PASSWORD`
@@ -78,35 +81,41 @@ Actions secrets required:
 - `PERSON_HEIGHT_CM`
 - `PERSON_WEIGHT_KG`
 - `PERSON_GOAL`
+- `CRON_SECRET`
 
 Notes:
 
-- Workflows run migrations before syncs.
+- Each cron request runs migrations before the sync starts.
 - Sync emails are deduplicated per `sync_type + metric_date`.
-- Workflow concurrency is enabled to reduce duplicate overlapping runs.
-- Morning/evening jobs use daily sync data.
+- Morning uses the previous day.
 - Weekly digest uses the most recent 7-day window from the database and currently requires at least 3 synced days in that window.
+- Cron endpoints require `Authorization: Bearer <CRON_SECRET>`.
+- `vercel.json` currently defines the Lisbon-approximate UTC schedules.
 
 ## Vercel Dashboard
 
-The Vercel deployment hosts only the dashboard.
+The Vercel deployment hosts the dashboard and the cron endpoints.
 
 Required Vercel environment variables:
 
 - `DATABASE_URL`
+- `CRON_SECRET`
 
 Current routes:
 
 - `/`
 - `/api/health`
 - `/api/dashboard`
+- `/api/cron/morning`
+- `/api/cron/weekly`
 
 Deployment notes:
 
 - Framework preset: `Vite`
 - Build command: `npm run build`
 - Output directory: `dist`
-- The dashboard uses the same Supabase/Postgres database as the sync jobs.
+- The dashboard and cron jobs use the same Supabase/Postgres database.
+- Set `CRON_SECRET` in Vercel so scheduled calls cannot be triggered publicly.
 
 ## Operational Notes
 
@@ -114,3 +123,4 @@ Deployment notes:
 - Local Garmin token reuse is enabled to reduce repeated login pressure on your machine.
 - The dashboard API intentionally returns a shaped subset of Garmin payload data instead of the full raw arrays.
 - Weekly digest is a distinct flow from daily syncs and uses weekly aggregation plus a weekly email template.
+- GitHub Actions workflow files have been removed from the repo so repository-triggered Actions runs stop.
