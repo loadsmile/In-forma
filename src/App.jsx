@@ -25,14 +25,6 @@ function formatClockTime(value) {
   return date && !Number.isNaN(date.getTime()) ? format(date, 'HH:mm') : 'n/a';
 }
 
-function formatTimestamp(value) {
-  if (!value) {
-    return 'Pending';
-  }
-
-  return format(new Date(value), 'd MMM yyyy, HH:mm');
-}
-
 function formatDuration(seconds) {
   if (seconds == null) {
     return 'n/a';
@@ -476,31 +468,6 @@ function ActivityPanel({ focusDay }) {
   );
 }
 
-function SyncPanel({ recentRuns }) {
-  return (
-    <article className="panel panel-sync">
-      <div className="panel-heading compact">
-        <div>
-          <p className="panel-kicker">Pipeline pulse</p>
-          <h2>Recent syncs</h2>
-        </div>
-      </div>
-
-      <ul className="sync-list">
-        {recentRuns.map((run) => (
-          <li key={run.id}>
-            <span className={`sync-status status-${run.status}`}>{run.status}</span>
-            <div>
-              <strong>{run.sync_type}</strong>
-              <span>{formatTimestamp(run.started_at)}</span>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </article>
-  );
-}
-
 function RecoveryPanel({ focusDay }) {
   const rows = buildRecoveryRows(focusDay);
   const trainingStatusDetails = getTrainingStatusDetails(focusDay);
@@ -589,7 +556,6 @@ export default function App() {
 
   const focusDay = dashboard?.focusDay ?? null;
   const recentDays = dashboard?.recentDays ?? [];
-  const recentRuns = dashboard?.recentRuns ?? [];
   const recommendations = getRecommendationItems(focusDay?.recommendations);
   const trendSummary = buildTrendSummary(recentDays);
   const activities = getActivities(focusDay);
@@ -746,7 +712,6 @@ export default function App() {
         <RecoveryPanel focusDay={focusDay} />
         <SleepStageCard focusDay={focusDay} />
         <ActivityPanel focusDay={focusDay} />
-        <SyncPanel recentRuns={recentRuns} />
       </section>
     </main>
   );
