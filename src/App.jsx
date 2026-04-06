@@ -149,12 +149,13 @@ function average(values) {
   return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
 }
 
-function buildTrendSummary(days) {
-  const recentDays = days.slice(0, 3);
-  const stepValues = recentDays.map((day) => day.steps).filter((value) => value != null);
-  const hrvValues = recentDays.map((day) => getNightlyHrv(day)).filter((value) => value != null);
-  const heartValues = recentDays.map((day) => day.resting_heart_rate).filter((value) => value != null);
-  const sleepScoreValues = recentDays.map((day) => getSleepScore(day)).filter((value) => value != null);
+function buildTrendSummary(activityDays, recoveryDays) {
+  const recentActivityDays = activityDays.slice(0, 3);
+  const recentRecoveryDays = recoveryDays.slice(0, 3);
+  const stepValues = recentActivityDays.map((day) => day.steps).filter((value) => value != null);
+  const hrvValues = recentRecoveryDays.map((day) => getNightlyHrv(day)).filter((value) => value != null);
+  const heartValues = recentRecoveryDays.map((day) => day.resting_heart_rate).filter((value) => value != null);
+  const sleepScoreValues = recentRecoveryDays.map((day) => getSleepScore(day)).filter((value) => value != null);
 
   return {
     averageSteps: average(stepValues),
@@ -346,19 +347,19 @@ function RecoveryTrendChart({ days }) {
   );
 }
 
-function SleepStageCard({ focusDay }) {
-  const sleepDetails = getSleepDetails(focusDay);
-  const stages = buildSleepStages(focusDay);
-  const timelineLabels = buildSleepTimelineLabels(focusDay);
+function SleepStageCard({ overnightRecovery }) {
+  const sleepDetails = getSleepDetails(overnightRecovery);
+  const stages = buildSleepStages(overnightRecovery);
+  const timelineLabels = buildSleepTimelineLabels(overnightRecovery);
 
   return (
     <article className="panel panel-sleep">
       <div className="panel-heading">
         <div>
-          <p className="panel-kicker">Sleep architecture</p>
-          <h2>Overnight profile</h2>
+          <p className="panel-kicker">How you slept last night</p>
+          <h2>Overnight recovery</h2>
         </div>
-        <span>{formatDuration(focusDay?.sleep_seconds)}</span>
+        <span>{formatDuration(overnightRecovery?.sleep_seconds)}</span>
       </div>
 
       {stages.length > 0 ? (
@@ -417,15 +418,15 @@ function SleepStageCard({ focusDay }) {
   );
 }
 
-function ActivityPanel({ focusDay }) {
-  const activities = getActivities(focusDay);
+function ActivityPanel({ reviewedDay }) {
+  const activities = getActivities(reviewedDay);
 
   return (
     <article className="panel panel-activities">
       <div className="panel-heading">
         <div>
-          <p className="panel-kicker">Completed sessions</p>
-          <h2>Previous day movement</h2>
+          <p className="panel-kicker">Yesterday in review</p>
+          <h2>Completed sessions</h2>
         </div>
         <span>{activities.length} logged</span>
       </div>
@@ -459,17 +460,17 @@ function ActivityPanel({ focusDay }) {
   );
 }
 
-function RecoveryPanel({ focusDay }) {
-  const rows = buildRecoveryRows(focusDay);
-  const trainingStatusDetails = getTrainingStatusDetails(focusDay);
-  const trainingLoadBalanceDetails = getTrainingLoadBalanceDetails(focusDay);
-  const hrvDetails = getHrvDetails(focusDay);
+function RecoveryPanel({ overnightRecovery }) {
+  const rows = buildRecoveryRows(overnightRecovery);
+  const trainingStatusDetails = getTrainingStatusDetails(overnightRecovery);
+  const trainingLoadBalanceDetails = getTrainingLoadBalanceDetails(overnightRecovery);
+  const hrvDetails = getHrvDetails(overnightRecovery);
 
   return (
     <article className="panel panel-recovery">
       <div className="panel-heading">
         <div>
-          <p className="panel-kicker">Recovery signals</p>
+          <p className="panel-kicker">Last night recovery signals</p>
           <h2>Readiness markers</h2>
         </div>
         <span>{hrvDetails?.status ?? 'Passive data only'}</span>
@@ -545,22 +546,24 @@ export default function App() {
     };
   }, []);
 
-  const focusDay = dashboard?.focusDay ?? null;
-  const recentDays = dashboard?.recentDays ?? [];
-  const recommendations = getRecommendationItems(focusDay?.recommendations);
-  const trendSummary = buildTrendSummary(recentDays);
-  const activities = getActivities(focusDay);
-  const hrvPoints = buildChartPoints(recentDays, (day) => getNightlyHrv(day));
-  const heartRatePoints = buildChartPoints(recentDays, (day) => day.resting_heart_rate ?? null);
-  const sleepScorePoints = buildChartPoints(recentDays, (day) => getSleepScore(day));
+  const briefing = dashboard?.briefing ?? null;
+  const reviewedDay = dashboard?.reviewedDay ?? null;
+  const overnightRecovery = dashboard?.overnightRecovery ?? null;
+  const recentActivityDays = dashboard?.recentActivityDays ?? [];
+  const recentRecoveryDays = dashboard?.recentRecoveryDays ?? [];
+  const recommendations = getRecommendationItems(briefing?.recommendations);
+  const trendSummary = buildTrendSummary(recentActivityDays, recentRecoveryDays);
+  const hrvPoints = buildChartPoints(recentRecoveryDays, (day) => getNightlyHrv(day));
+  const heartRatePoints = buildChartPoints(recentRecoveryDays, (day) => day.resting_heart_rate ?? null);
+  const sleepScorePoints = buildChartPoints(recentRecoveryDays, (day) => getSleepScore(day));
 
-  if (!loading && !error && !focusDay) {
+  if (!loading && !error && !briefing) {
     return (
       <main className="dashboard-shell empty-shell">
         <section className="empty-state panel">
-          <p className="panel-kicker">No synced days yet</p>
-          <h1>Run a morning sync to generate the first recovery dashboard.</h1>
-          <p className="muted-copy">The dashboard will populate after Garmin metrics and analysis are stored in the database.</p>
+          <p className="panel-kicker">No morning briefings yet</p>
+          <h1>Run a morning sync to generate the first briefing.</h1>
+          <p className="muted-copy">The dashboard will populate after yesterday activity, overnight recovery, and the briefing are stored in the database.</p>
         </section>
       </main>
     );
@@ -576,12 +579,12 @@ export default function App() {
           </div>
 
           <p className="hero-copy-text">
-            A previous-day health view with sleep depth, HRV, training load, completed activity context, and next-day recommendations grounded in the last synced Garmin data.
+            A morning briefing that separates how you slept last night from what you did yesterday, then turns both into recommendations for today.
           </p>
 
           <p className="hero-reviewed-day hero-reviewed-day-corner">
-            <span>Reviewed day</span>
-            <strong>{formatMetricDate(focusDay?.metric_date)}</strong>
+            <span>Briefing date</span>
+            <strong>{formatMetricDate(briefing?.briefing_date)}</strong>
           </p>
         </div>
       </section>
@@ -594,38 +597,38 @@ export default function App() {
             <article className="panel panel-focus">
               <div className="panel-heading">
                 <div>
-                  <p className="panel-kicker">Previous day brief</p>
-                  <h2>{formatMetricDate(focusDay?.metric_date, 'EEEE')}</h2>
+                  <p className="panel-kicker">Today briefing</p>
+                  <h2>{formatMetricDate(briefing?.briefing_date, 'EEEE')}</h2>
                 </div>
               </div>
 
-              <p className="focus-summary">{focusDay?.summary ?? 'No analysis stored yet.'}</p>
+              <p className="focus-summary">{briefing?.summary ?? 'No analysis stored yet.'}</p>
 
               <div className="snapshot-grid">
                 <div className="snapshot-card lime-card">
-                  <span>Steps</span>
-                  <strong><MetricDisplay value={focusDay?.steps == null ? null : formatNumber(focusDay.steps)} /></strong>
-                  <small>{displayMetricHint(focusDay?.steps ?? null, 'Previous day total')}</small>
+                  <span>Yesterday steps</span>
+                  <strong><MetricDisplay value={reviewedDay?.steps == null ? null : formatNumber(reviewedDay.steps)} /></strong>
+                  <small>{displayMetricHint(reviewedDay?.steps ?? null, 'Previous day total')}</small>
                 </div>
                 <div className="snapshot-card cream-card">
-                  <span>Sleep</span>
-                  <strong><MetricDisplay value={focusDay?.sleep_seconds == null ? null : formatDuration(focusDay.sleep_seconds)} /></strong>
-                  <small>{displayMetricHint(focusDay?.sleep_seconds ?? null, 'Total overnight duration')}</small>
+                  <span>Last night sleep</span>
+                  <strong><MetricDisplay value={overnightRecovery?.sleep_seconds == null ? null : formatDuration(overnightRecovery.sleep_seconds)} /></strong>
+                  <small>{displayMetricHint(overnightRecovery?.sleep_seconds ?? null, 'Total overnight duration')}</small>
                 </div>
                 <div className="snapshot-card blush-card">
                   <span>Nightly HRV</span>
-                  <strong><MetricDisplay value={getNightlyHrv(focusDay)} /></strong>
-                  <small>{displayMetricHint(getNightlyHrv(focusDay), getHrvDetails(focusDay)?.status ?? 'Recovery variability')}</small>
+                  <strong><MetricDisplay value={getNightlyHrv(overnightRecovery)} /></strong>
+                  <small>{displayMetricHint(getNightlyHrv(overnightRecovery), getHrvDetails(overnightRecovery)?.status ?? 'Recovery variability')}</small>
                 </div>
                 <div className="snapshot-card slate-card">
-                  <span>Resting HR</span>
-                  <strong><MetricDisplay value={focusDay?.resting_heart_rate ?? null} /></strong>
-                  <small>{displayMetricHint(focusDay?.resting_heart_rate ?? null, 'Baseline pulse')}</small>
+                  <span>Sleep score</span>
+                  <strong><MetricDisplay value={overnightRecovery?.sleep_score ?? null} /></strong>
+                  <small>{displayMetricHint(overnightRecovery?.sleep_score ?? null, 'How restorative last night was')}</small>
                 </div>
                 <div className="snapshot-card olive-card">
-                  <span>Training load</span>
-                  <strong><MetricDisplay value={getTrainingStatusDetails(focusDay)?.weeklyTrainingLoad ?? null} /></strong>
-                  <small>{displayMetricHint(getTrainingStatusDetails(focusDay)?.weeklyTrainingLoad ?? null, getTrainingStatusDetails(focusDay)?.acuteTrainingLoad?.acwrStatus ?? 'Garmin load signal')}</small>
+                  <span>Today load signal</span>
+                  <strong><MetricDisplay value={getTrainingStatusDetails(overnightRecovery)?.weeklyTrainingLoad ?? null} /></strong>
+                  <small>{displayMetricHint(getTrainingStatusDetails(overnightRecovery)?.weeklyTrainingLoad ?? null, getTrainingStatusDetails(overnightRecovery)?.acuteTrainingLoad?.acwrStatus ?? 'Garmin load signal')}</small>
                 </div>
               </div>
             </article>
@@ -634,9 +637,9 @@ export default function App() {
               <div className="panel-heading">
                 <div>
                   <p className="panel-kicker">3-day rhythm</p>
-                  <h2>Recovery trendline</h2>
+                  <h2>Activity and recovery trendline</h2>
                 </div>
-                <span>{recentDays.length} days loaded</span>
+                <span>{Math.max(recentActivityDays.length, recentRecoveryDays.length)} days loaded</span>
               </div>
 
               <div className="trend-layout">
@@ -664,7 +667,7 @@ export default function App() {
             </div>
 
             <div className="trend-content-stack">
-              <RecoveryTrendChart days={recentDays} />
+              <RecoveryTrendChart days={recentActivityDays} />
 
               <div className="mini-trend-grid">
                 <MiniTrendRow label="Nightly HRV" points={hrvPoints} colorClass="series-hrv" />
@@ -676,15 +679,15 @@ export default function App() {
             </article>
           </div>
 
-          <RecoveryPanel focusDay={focusDay} />
+          <RecoveryPanel overnightRecovery={overnightRecovery} />
         </div>
 
         <div className="dashboard-secondary-stack dashboard-connected-stack">
           <article className="panel panel-recommendations">
             <div className="panel-heading compact">
               <div>
-                <p className="panel-kicker">Tomorrow focus</p>
-                <h2>Recommendations</h2>
+                <p className="panel-kicker">Today focus</p>
+                <h2>Today focus</h2>
               </div>
             </div>
 
@@ -697,8 +700,8 @@ export default function App() {
             </ul>
           </article>
 
-          <SleepStageCard focusDay={focusDay} />
-          <ActivityPanel focusDay={focusDay} />
+          <SleepStageCard overnightRecovery={overnightRecovery} />
+          <ActivityPanel reviewedDay={reviewedDay} />
         </div>
       </section>
     </main>

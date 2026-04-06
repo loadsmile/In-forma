@@ -101,7 +101,7 @@ function filterActivitiesByDate(activities, metricDate) {
     }));
 }
 
-function buildSleepDetails(sleep) {
+export function buildSleepDetails(sleep) {
   if (!sleep) {
     return null;
   }
@@ -157,7 +157,7 @@ function buildSleepDetails(sleep) {
   };
 }
 
-function buildHeartRateDetails(heartRate) {
+export function buildHeartRateDetails(heartRate) {
   if (!heartRate) {
     return null;
   }
@@ -174,7 +174,7 @@ function buildHeartRateDetails(heartRate) {
   };
 }
 
-function buildHrvDetails(hrvData) {
+export function buildHrvDetails(hrvData) {
   const summary = hrvData?.hrvSummary;
 
   if (!summary) {
@@ -192,7 +192,7 @@ function buildHrvDetails(hrvData) {
   };
 }
 
-function buildTrainingStatusDetails(trainingStatusResponse) {
+export function buildTrainingStatusDetails(trainingStatusResponse) {
   const latestStatus = latestRecord(trainingStatusResponse?.latestTrainingStatusData);
 
   if (!latestStatus) {
@@ -219,7 +219,7 @@ function buildTrainingStatusDetails(trainingStatusResponse) {
   };
 }
 
-function buildTrainingLoadBalanceDetails(trainingLoadBalanceResponse) {
+export function buildTrainingLoadBalanceDetails(trainingLoadBalanceResponse) {
   const latestBalance = latestRecord(trainingLoadBalanceResponse?.metricsTrainingLoadBalanceDTOMap);
 
   if (!latestBalance) {

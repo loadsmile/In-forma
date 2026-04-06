@@ -1,15 +1,19 @@
-import { format } from 'date-fns';
+import { addDays, format } from 'date-fns';
 import { createPool } from '../db/pool.js';
-import { upsertByDate } from '../db/upsert.js';
+import { upsertByDate, upsertByKey } from '../db/upsert.js';
 import { getDailyAnalysisByDate, getDailyHealthMetricsByDate } from '../db/queries/daily.js';
+import { getDailyBriefingByDate, getOvernightRecoveryByDate } from '../db/queries/briefings.js';
 import { claimEmailDelivery, markEmailDeliverySent, releasePendingEmailDelivery } from '../db/queries/email-deliveries.js';
 import { insertSyncRun } from '../db/queries/sync-runs.js';
 import { getWeeklyDigestDays } from '../db/queries/weekly.js';
 import { GARMIN_METRIC_SCHEMA_VERSION, getSyncMetricDate, syncDailySummary } from '../garmin/syncDailySummary.js';
+import { OVERNIGHT_RECOVERY_SCHEMA_VERSION, syncOvernightRecovery } from '../garmin/syncOvernightRecovery.js';
 import { renderDailyEmail } from '../email/renderDailyEmail.js';
+import { renderMorningBriefingEmail } from '../email/renderMorningBriefingEmail.js';
 import { renderWeeklyEmail } from '../email/renderWeeklyEmail.js';
 import { sendZapierEmail } from '../email/sendZapierEmail.js';
 import { analyzeDailySummary, DAILY_ANALYSIS_PROMPT_VERSION } from '../llm/analyzeDailySummary.js';
+import { analyzeMorningBriefing, MORNING_BRIEFING_PROMPT_VERSION } from '../llm/analyzeMorningBriefing.js';
 import { analyzeWeeklyDigest } from '../llm/analyzeWeeklyDigest.js';
 import { buildWeeklyDigest, getWeeklyDigestDateRange } from './buildWeeklyDigest.js';
 
@@ -97,6 +101,83 @@ async function runDailySync({ pool, startedAt, syncType, deliveryLabel, forceRef
   });
 }
 
+async function runMorningBriefing({ pool, startedAt, deliveryLabel, forceRefresh, reviewedActivityDate }) {
+  const briefingDate = format(addDays(new Date(`${reviewedActivityDate}T00:00:00`), 1), 'yyyy-MM-dd');
+  const cachedMetrics = forceRefresh
+    ? null
+    : await getDailyHealthMetricsByDate(pool, reviewedActivityDate);
+  const reusableMetrics = cachedMetrics?.raw_payload?.schemaVersion === GARMIN_METRIC_SCHEMA_VERSION
+    ? cachedMetrics
+    : null;
+  const reviewedDay = reusableMetrics ?? await syncDailySummary({ syncType: 'morning' });
+
+  if (!reusableMetrics) {
+    await upsertByDate(pool, 'daily_health_metrics', reviewedDay);
+  }
+
+  const cachedAnalysis = forceRefresh || !reusableMetrics
+    ? null
+    : await getDailyAnalysisByDate(pool, reviewedDay.metric_date);
+  const reusableAnalysis = cachedAnalysis?.prompt_version === DAILY_ANALYSIS_PROMPT_VERSION
+    ? cachedAnalysis
+    : null;
+  const reviewedDayAnalysis = reusableAnalysis ?? await analyzeDailySummary(reviewedDay);
+
+  if (!reusableAnalysis) {
+    await upsertByDate(pool, 'daily_analysis', reviewedDayAnalysis);
+  }
+
+  const cachedRecovery = forceRefresh
+    ? null
+    : await getOvernightRecoveryByDate(pool, briefingDate);
+  const reusableRecovery = cachedRecovery?.raw_payload?.schemaVersion === OVERNIGHT_RECOVERY_SCHEMA_VERSION
+    ? cachedRecovery
+    : null;
+  const overnightRecovery = reusableRecovery ?? await syncOvernightRecovery({ recoveryDate: new Date() });
+
+  if (!reusableRecovery) {
+    await upsertByKey(pool, 'overnight_recovery', overnightRecovery, 'recovery_date');
+  }
+
+  const cachedBriefing = forceRefresh
+    ? null
+    : await getDailyBriefingByDate(pool, briefingDate);
+  const reusableBriefing = reusableMetrics && reusableRecovery && cachedBriefing?.prompt_version === MORNING_BRIEFING_PROMPT_VERSION
+    ? cachedBriefing
+    : null;
+  const briefing = reusableBriefing ?? await analyzeMorningBriefing({
+    briefingDate,
+    reviewedDay,
+    overnightRecovery,
+  });
+
+  if (!reusableBriefing) {
+    await upsertByKey(pool, 'daily_briefings', briefing, 'briefing_date');
+  }
+
+  const email = renderMorningBriefingEmail({
+    briefing,
+    reviewedDay,
+    overnightRecovery,
+    deliveryLabel,
+  });
+  const deliveryStatus = await deliverEmailOnce(pool, {
+    deliveryKey: buildDeliveryKey('morning', briefing.briefing_date),
+    metricDate: briefing.briefing_date,
+    syncType: 'morning',
+    email,
+  });
+
+  await insertSyncRun(pool, {
+    syncType: 'morning',
+    status: 'success',
+    startedAt,
+    finishedAt: new Date(),
+    metricDate: briefing.briefing_date,
+    message: `morning briefing completed successfully. Activity: ${reusableMetrics ? 'reused' : 'fetched'} (${reviewedDay.metric_date}). Recovery: ${reusableRecovery ? 'reused' : 'fetched'} (${overnightRecovery.recovery_date}). Briefing: ${reusableBriefing ? 'reused' : 'generated'}. Email: ${deliveryStatus}.${forceRefresh ? ' Force refresh enabled.' : ''}${getDailyWarningSummary(reviewedDay)}`,
+  });
+}
+
 async function runWeeklyDigest({ pool, startedAt, syncType, deliveryLabel, metricDate }) {
   const { startMetricDate, endMetricDate } = getWeeklyDigestDateRange(metricDate);
   const days = await getWeeklyDigestDays(pool, startMetricDate, endMetricDate);
@@ -142,6 +223,14 @@ export async function runSync({ syncType, deliveryLabel, forceRefresh = false })
         syncType,
         deliveryLabel,
         metricDate,
+      });
+    } else if (syncType === 'morning') {
+      await runMorningBriefing({
+        pool,
+        startedAt,
+        deliveryLabel,
+        forceRefresh,
+        reviewedActivityDate: metricDate,
       });
     } else {
       await runDailySync({
