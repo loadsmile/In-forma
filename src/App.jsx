@@ -356,8 +356,8 @@ function SleepStageCard({ overnightRecovery }) {
     <article className="panel panel-sleep">
       <div className="panel-heading">
         <div>
-          <p className="panel-kicker">How you slept last night</p>
-          <h2>Overnight recovery</h2>
+          <p className="panel-kicker">Last night</p>
+          <h2>Sleep architecture</h2>
         </div>
         <span>{formatDuration(overnightRecovery?.sleep_seconds)}</span>
       </div>
@@ -425,8 +425,8 @@ function ActivityPanel({ reviewedDay }) {
     <article className="panel panel-activities">
       <div className="panel-heading">
         <div>
-          <p className="panel-kicker">Yesterday in review</p>
-          <h2>Completed sessions</h2>
+          <p className="panel-kicker">Yesterday</p>
+          <h2>Completed activity</h2>
         </div>
         <span>{activities.length} logged</span>
       </div>
@@ -470,8 +470,8 @@ function RecoveryPanel({ overnightRecovery }) {
     <article className="panel panel-recovery">
       <div className="panel-heading">
         <div>
-          <p className="panel-kicker">Last night recovery signals</p>
-          <h2>Readiness markers</h2>
+          <p className="panel-kicker">Last night recovery</p>
+          <h2>Morning readiness</h2>
         </div>
         <span>{hrvDetails?.status ?? 'Passive data only'}</span>
       </div>
@@ -579,11 +579,11 @@ export default function App() {
           </div>
 
           <p className="hero-copy-text">
-            A morning briefing that separates how you slept last night from what you did yesterday, then turns both into recommendations for today.
+            A morning briefing built from last night's recovery and yesterday's activity, then translated into focused recommendations for today.
           </p>
 
           <p className="hero-reviewed-day hero-reviewed-day-corner">
-            <span>Briefing date</span>
+            <span>Today</span>
             <strong>{formatMetricDate(briefing?.briefing_date)}</strong>
           </p>
         </div>
@@ -597,8 +597,8 @@ export default function App() {
             <article className="panel panel-focus">
               <div className="panel-heading">
                 <div>
-                  <p className="panel-kicker">Today briefing</p>
-                  <h2>{formatMetricDate(briefing?.briefing_date, 'EEEE')}</h2>
+                  <p className="panel-kicker">Today at a glance</p>
+                  <h2>Your morning briefing</h2>
                 </div>
               </div>
 
@@ -606,14 +606,14 @@ export default function App() {
 
               <div className="snapshot-grid">
                 <div className="snapshot-card lime-card">
-                  <span>Yesterday steps</span>
+                  <span>Yesterday's steps</span>
                   <strong><MetricDisplay value={reviewedDay?.steps == null ? null : formatNumber(reviewedDay.steps)} /></strong>
-                  <small>{displayMetricHint(reviewedDay?.steps ?? null, 'Previous day total')}</small>
+                  <small>{displayMetricHint(reviewedDay?.steps ?? null, 'Total movement from yesterday')}</small>
                 </div>
                 <div className="snapshot-card cream-card">
                   <span>Last night sleep</span>
                   <strong><MetricDisplay value={overnightRecovery?.sleep_seconds == null ? null : formatDuration(overnightRecovery.sleep_seconds)} /></strong>
-                  <small>{displayMetricHint(overnightRecovery?.sleep_seconds ?? null, 'Total overnight duration')}</small>
+                  <small>{displayMetricHint(overnightRecovery?.sleep_seconds ?? null, 'Total sleep from last night')}</small>
                 </div>
                 <div className="snapshot-card blush-card">
                   <span>Nightly HRV</span>
@@ -623,12 +623,12 @@ export default function App() {
                 <div className="snapshot-card slate-card">
                   <span>Sleep score</span>
                   <strong><MetricDisplay value={overnightRecovery?.sleep_score ?? null} /></strong>
-                  <small>{displayMetricHint(overnightRecovery?.sleep_score ?? null, 'How restorative last night was')}</small>
+                  <small>{displayMetricHint(overnightRecovery?.sleep_score ?? null, 'How restorative last night felt')}</small>
                 </div>
                 <div className="snapshot-card olive-card">
                   <span>Today load signal</span>
                   <strong><MetricDisplay value={getTrainingStatusDetails(overnightRecovery)?.weeklyTrainingLoad ?? null} /></strong>
-                  <small>{displayMetricHint(getTrainingStatusDetails(overnightRecovery)?.weeklyTrainingLoad ?? null, getTrainingStatusDetails(overnightRecovery)?.acuteTrainingLoad?.acwrStatus ?? 'Garmin load signal')}</small>
+                  <small>{displayMetricHint(getTrainingStatusDetails(overnightRecovery)?.weeklyTrainingLoad ?? null, getTrainingStatusDetails(overnightRecovery)?.acuteTrainingLoad?.acwrStatus ?? 'Training readiness for today')}</small>
                 </div>
               </div>
             </article>
@@ -636,8 +636,8 @@ export default function App() {
             <article className="panel panel-trends">
               <div className="panel-heading">
                 <div>
-                  <p className="panel-kicker">3-day rhythm</p>
-                  <h2>Activity and recovery trendline</h2>
+                  <p className="panel-kicker">Last 3 days and nights</p>
+                  <h2>Short-term rhythm</h2>
                 </div>
                 <span>{Math.max(recentActivityDays.length, recentRecoveryDays.length)} days loaded</span>
               </div>
@@ -687,7 +687,7 @@ export default function App() {
             <div className="panel-heading compact">
               <div>
                 <p className="panel-kicker">Today focus</p>
-                <h2>Today focus</h2>
+                <h2>What to do today</h2>
               </div>
             </div>
 

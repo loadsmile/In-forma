@@ -130,7 +130,7 @@ export function renderMorningBriefingEmail({ briefing, reviewedDay, overnightRec
   const briefingDate = format(getMetricDate(briefing.briefing_date), 'EEEE, d MMMM yyyy');
   const reviewedDate = format(getMetricDate(reviewedDay.metric_date), 'EEEE, d MMMM yyyy');
   const recommendationItems = getRecommendationItems(briefing.recommendations);
-  const subject = `${env.personName}'s morning briefing for ${briefingDate}`;
+  const subject = `${env.personName}'s today briefing for ${briefingDate}`;
 
   const html = `
     <html>
@@ -142,16 +142,16 @@ export function renderMorningBriefingEmail({ briefing, reviewedDay, overnightRec
                 <tr>
                   <td>
                     <p style="margin:0 0 8px;font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:#426bff;">${escapeHtml(deliveryLabel)}</p>
-                    <h1 style="margin:0 0 12px;font-size:28px;line-height:1.1;">${escapeHtml(env.personName)}'s morning briefing</h1>
+                    <h1 style="margin:0 0 12px;font-size:28px;line-height:1.1;">${escapeHtml(env.personName)}'s today briefing</h1>
                     <p style="margin:0 0 24px;color:#526274;">${escapeHtml(briefingDate)}</p>
-                    <h2 style="margin:0 0 12px;font-size:18px;">Summary</h2>
+                    <h2 style="margin:0 0 12px;font-size:18px;">Today at a glance</h2>
                     <p style="margin:0 0 20px;line-height:1.6;">${formatSummary(briefing.summary)}</p>
                     <h2 style="margin:0 0 12px;font-size:18px;">How you slept last night</h2>
                     ${renderMorningRecovery(overnightRecovery)}
-                    <h2 style="margin:0 0 12px;font-size:18px;">Yesterday's activity</h2>
+                    <h2 style="margin:0 0 12px;font-size:18px;">Yesterday in review</h2>
                     <p style="margin:0 0 12px;color:#526274;">Reviewed day: ${escapeHtml(reviewedDate)}</p>
                     ${renderYesterdayActivity(reviewedDay)}
-                    <h2 style="margin:0 0 12px;font-size:18px;">Recommendations for today</h2>
+                    <h2 style="margin:0 0 12px;font-size:18px;">What to do today</h2>
                     <ul style="padding-left:18px;line-height:1.8;color:#243447;margin:0 0 24px;">
                       ${renderList(recommendationItems)}
                     </ul>
