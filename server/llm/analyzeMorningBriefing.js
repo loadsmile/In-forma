@@ -60,8 +60,19 @@ export async function analyzeMorningBriefing({ briefingDate, reviewedDay, overni
     ],
   });
 
-  const content = response.choices[0]?.message?.content ?? '{"summary":"","recommendations":[]}';
-  const parsed = JSON.parse(content);
+  const content = response.choices?.[0]?.message?.content;
+
+  if (!content) {
+    throw new Error(`Morning briefing response did not include a choice payload for model ${env.openRouterModel}.`);
+  }
+
+  let parsed;
+
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    throw new Error('Morning briefing response was not valid JSON.');
+  }
 
   return {
     briefing_date: format(getMetricDate(briefingDate), 'yyyy-MM-dd'),

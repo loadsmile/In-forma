@@ -40,8 +40,19 @@ export async function analyzeDailySummary(metrics) {
     ],
   });
 
-  const content = response.choices[0]?.message?.content ?? '{"summary":"","recommendations":[]}';
-  const parsed = JSON.parse(content);
+  const content = response.choices?.[0]?.message?.content;
+
+  if (!content) {
+    throw new Error(`Daily analysis response did not include a choice payload for model ${env.openRouterModel}.`);
+  }
+
+  let parsed;
+
+  try {
+    parsed = JSON.parse(content);
+  } catch {
+    throw new Error('Daily analysis response was not valid JSON.');
+  }
 
   return {
     metric_date: metrics.metric_date,
